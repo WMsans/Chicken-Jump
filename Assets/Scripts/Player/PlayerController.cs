@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -35,21 +36,29 @@ public class PlayerController : MonoBehaviour
 
     [Header("Player Rotation")]
     public float maxRotateSpeed;
+    public float maxRotateAirSpeed;
     public float maxReturnSpeed;
     [Range(0, 1f)]public float returnSpeedSmoothing;
     public float rotateAccel;
     public float rotateDecel;
     public float fallingAccel;
+    public float accelMultiplier;
 
     [Header("Arms and Legs")]
     public Collider2D arms;
     public bool ArmTouchingGround { get { return arms.IsTouchingLayers(m_WhatIsGround); } }
+
+    [Header("Others")]
+    public float inevitableSpawnTime;
+    public float inevitableSpawnTimer { get; private set; }
+    Vector2 checkPointPosition;
+    
     void Awake()
     {
         if (Instance != null)
         {
-            Destroy(gameObject);
             Debug.LogError("Found more than one Player in the scene.");
+            Destroy(gameObject);
         }
         else
         {
@@ -59,11 +68,14 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         SwitchState(Enums.PlayerState.Normal);
+        SetCheckPoint(transform.position);
     }
     void FixedUpdate()
     {
         states[currentState].FixedUpdateState(this);
         this.keyJumpDown = false;
+
+        inevitableSpawnTimer = Mathf.Max(inevitableSpawnTimer - 1, 0);
     }
     void Update()
     {
@@ -96,6 +108,22 @@ public class PlayerController : MonoBehaviour
     public PlayerBaseState GetStateInstance(Enums.PlayerState state)
     {
         return states[state];
+    }
+    public void Die()
+    {
+        SwitchState(Enums.PlayerState.Stiff);
+    }
+    public void SetCheckPoint(Vector2 _checkPointPosition)
+    {
+        checkPointPosition = _checkPointPosition;
+    }
+    public void ReturnToCheckPoint()
+    {
+        transform.position = checkPointPosition;
+        transform.rotation = Quaternion.Euler(Vector3.zero);
+        inevitableSpawnTimer = inevitableSpawnTime;
+
+        
     }
     private void OnDrawGizmosSelected()
     {

@@ -31,9 +31,13 @@ public class PlayerNormalState : PlayerBaseState
     float rotateDecelerationSpeed;
     float fallingAccelerationSpeed;
     float maxRotateSpeed;
+    float maxRotateAirSpeed;
     float maxReturnSpeed;
     float returnSpeedSmoothing;
     float rotateSpeed;
+    float accelMultiplier;
+    bool accelingRotate = false;
+    float wasMoving;
 
     Rigidbody2D m_Rigidbody2D;
     int _coyoteTimer = 0;
@@ -57,9 +61,14 @@ public class PlayerNormalState : PlayerBaseState
         rotateDecelerationSpeed = player.rotateDecel;
         fallingAccelerationSpeed = player.fallingAccel;
         maxRotateSpeed = player.maxRotateSpeed;
+        maxRotateAirSpeed = player.maxRotateAirSpeed;
         maxReturnSpeed = player.maxReturnSpeed;
         returnSpeedSmoothing = player.returnSpeedSmoothing;
+        accelMultiplier = player.accelMultiplier;
+        accelingRotate = false;
+        wasMoving = 0;
 
+        rotateSpeed = 0;
         readyToJump = player.ReadyToJump;
     }
     public override void UpdateState(PlayerController player)
@@ -68,6 +77,19 @@ public class PlayerNormalState : PlayerBaseState
         {
             _jumpingTimer = player.m_CoyoteTime;
         }
+        if (player.ArmTouchingGround)
+        {
+            Die(player);
+        }
+    }
+    void Die(PlayerController player)
+    {
+        if(player.inevitableSpawnTimer <= 0)
+        {
+            // Stiff state
+            player.SwitchState(Enums.PlayerState.Stiff);
+        }
+        
     }
     public override void FixedUpdateState(PlayerController player)
     {
@@ -109,6 +131,12 @@ public class PlayerNormalState : PlayerBaseState
         if (readyToJump || m_AirControl)
         {
             #region Player Horizontal Movement
+            if(_sign(move) != 0 && wasMoving != _sign(move))
+            {
+                // multiply rotation
+                accelingRotate = true;
+            }
+            wasMoving = _sign(move);
             if ((Mathf.Abs(m_Rigidbody2D.velocity.x + _sign(move) * accelerationSpeed) <= maxHorizontalSpeed || (_sign(move) != _sign(m_Rigidbody2D.velocity.x) && Mathf.Abs(move) > 0.001f)))
             {
                 m_Rigidbody2D.velocity += _sign(move) * accelerationSpeed * Vector2.right;
@@ -133,15 +161,22 @@ public class PlayerNormalState : PlayerBaseState
             #endregion
 
             #region Rotation
-            if ((Mathf.Abs(rotateSpeed + _sign(move) * rotateAccelerationSpeed) <= maxRotateSpeed || (_sign(move) != _sign(rotateSpeed) && Mathf.Abs(move) > 0.001f)))
+            var _currentMaxRotateSpeed = maxRotateSpeed;
+            if (!fallingToGround) _currentMaxRotateSpeed = maxRotateAirSpeed;
+            if(accelingRotate) 
+            { 
+                rotateSpeed *= accelMultiplier; 
+                accelingRotate = false; 
+            }
+            if ((Mathf.Abs(rotateSpeed + _sign(move) * rotateAccelerationSpeed) <= _currentMaxRotateSpeed || (_sign(move) != _sign(rotateSpeed) && Mathf.Abs(move) > 0.001f)))
             {
                 rotateSpeed += _sign(move) * rotateAccelerationSpeed;
             }
-            else if ((Mathf.Abs(rotateSpeed + _sign(move) * rotateAccelerationSpeed) > maxRotateSpeed && Mathf.Abs(rotateSpeed) < maxRotateSpeed))
+            else if ((Mathf.Abs(rotateSpeed + _sign(move) * rotateAccelerationSpeed) > _currentMaxRotateSpeed && Mathf.Abs(rotateSpeed) < _currentMaxRotateSpeed))
             {
-                rotateSpeed = _sign(move) * maxRotateSpeed;
+                rotateSpeed = _sign(move) * _currentMaxRotateSpeed;
             }
-            rotateSpeed = Mathf.Clamp(rotateSpeed, -maxRotateSpeed, maxRotateSpeed);
+            //rotateSpeed = Mathf.Clamp(rotateSpeed, -_currentMaxRotateSpeed, _currentMaxRotateSpeed);
             if(Mathf.Abs(move) <= 0.001f && m_Rigidbody2D.velocity.y > 0 && jump) // Player not moving, Holding space and rising
             {
                 // Start Turn Back
@@ -161,9 +196,9 @@ public class PlayerNormalState : PlayerBaseState
             else if(Mathf.Abs(move) <= 0.001f && fallingToGround && !player.ArmTouchingGround)
             {
                 var _playerAngleDiff = Mathf.DeltaAngle(player.transform.rotation.z * Mathf.Rad2Deg, 0f);
-                rotateSpeed += _reverseSign(_playerAngleDiff) * fallingAccelerationSpeed;
+                rotateSpeed += -Mathf.Sign(_playerAngleDiff) * fallingAccelerationSpeed;
             }
-            else if ((Mathf.Abs(move) <= 0.001f && m_Rigidbody2D.velocity.y > 0 && !fallingToGround) || Mathf.Abs(rotateSpeed) > maxRotateSpeed || player.ArmTouchingGround) // Stop Rotation
+            else if ((Mathf.Abs(move) <= 0.001f && m_Rigidbody2D.velocity.y > 0 && !fallingToGround) || Mathf.Abs(rotateSpeed) > _currentMaxRotateSpeed || player.ArmTouchingGround) // Stop Rotation
             {
                 if (Mathf.Abs(rotateSpeed) <= rotateDecelerationSpeed)
                 {
@@ -253,20 +288,30 @@ public class PlayerNormalState : PlayerBaseState
 }
 public class PlayerStiffState : PlayerBaseState
 {
+    Rigidbody2D rd;
     public override void EnterState(PlayerController player)
     {
+        rd = player.GetComponent<Rigidbody2D>();
+        
 
+        player.GetComponent<SpriteRenderer>().color = Color.red;
     }
     public override void UpdateState(PlayerController player)
     {
-
+        if (Input.GetButtonDown("Jump"))
+        {
+            // Return to the last checkpoint
+            player.ReturnToCheckPoint();
+            // Respawn
+            player.SwitchState(Enums.PlayerState.Normal);
+        }
     }
     public override void FixedUpdateState(PlayerController player)
     {
-
+        rd.velocity = Vector2.zero;
     }
     public override void ExitState(PlayerController player)
     {
-
+        player.GetComponent<SpriteRenderer>().color = Color.white;
     }
 }
