@@ -3,10 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+[RequireComponent(typeof(Collider2D))]
 public class SceneLoadTrigger : MonoBehaviour
 {
     [SerializeField] SceneField[] scenesToLoad;
-    //[SerializeField] SceneField[] scenesToUnload;
+    private void Start()
+    {
+        var renderer = GetComponent<SpriteRenderer>();
+        if(renderer != null) renderer.enabled = false;
+    }
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
@@ -20,7 +25,7 @@ public class SceneLoadTrigger : MonoBehaviour
         for (int i = 0; i < SceneManager.sceneCount; i++)
         {
             Scene loadedScene = SceneManager.GetSceneAt(i);
-            if (loadedScene.name == "PersistentGameplay" || loadedScene.name == "DontDestroyOnLoad") continue;
+            if (loadedScene.name == "PersistantScene" || loadedScene.name == "DontDestroyOnLoad") continue;
             var unloading = true;
             foreach (var scene in scenesToLoad)
             {
