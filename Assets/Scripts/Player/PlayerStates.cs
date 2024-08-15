@@ -292,9 +292,22 @@ public class PlayerStiffState : PlayerBaseState
     public override void EnterState(PlayerController player)
     {
         rd = player.GetComponent<Rigidbody2D>();
-        
-
         player.GetComponent<SpriteRenderer>().color = Color.red;
+
+        // Get all objects that touchs arms
+        var cols = new Collider2D[12];
+        var colCount = player.arms.GetContacts(cols);
+        if (colCount > 0)
+            for (var i = 0; i < colCount; i++)
+            {
+                var col = cols[i];
+                if(col == null) continue;
+                if (col.CompareTag("HiddenBlock"))
+                {
+                    // If the block is hidden, make it shown
+                    col.GetComponent<HiddenBlock>().ShowBlock();
+                }
+            }
     }
     public override void UpdateState(PlayerController player)
     {

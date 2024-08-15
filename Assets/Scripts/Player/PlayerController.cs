@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     public float decel;
     public bool m_AirControl = false;                         // Whether or not a player can steer while jumping;
     public LayerMask m_WhatIsGround;                          // A mask determining what is ground to the character
+    public LayerMask m_HarmfulGround;
     public Transform m_GroundCheck;                           // A position marking where to check if the player is grounded.
     public float m_GroundedRadius;                            // The distance of to check the ground
     public float m_GroundBuff;                                // The distance to jump before touching the ground
@@ -46,7 +47,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Arms and Legs")]
     public Collider2D arms;
-    public bool ArmTouchingGround { get { return arms.IsTouchingLayers(m_WhatIsGround); } }
+    public bool ArmTouchingGround { get { return arms.IsTouchingLayers(m_HarmfulGround); } }
 
     [Header("Others")]
     public float inevitableSpawnTime;
