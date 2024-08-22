@@ -31,12 +31,12 @@ public class TrapBlock : MonoBehaviour
         {
             if (!checkingX)
             {
-                if (Mathf.Sign( other.GetComponent<Rigidbody2D>().velocity.y) != saveVelocity.y)
+                if (Mathf.Sign( other.GetComponent<Rigidbody2D>().velocity.y) != saveVelocity.y && Mathf.Abs(other.GetComponent<Rigidbody2D>().velocity.y) > 1)
                     other.GetComponent<PlayerController>().Die();
             }
             else
             {
-                if (Mathf.Sign(other.GetComponent<Rigidbody2D>().velocity.x) != saveVelocity.x)
+                if (Mathf.Sign(other.GetComponent<Rigidbody2D>().velocity.x) != saveVelocity.x && Mathf.Abs(other.GetComponent<Rigidbody2D>().velocity.x) > 1)
                     other.GetComponent<PlayerController>().Die();
             }
 

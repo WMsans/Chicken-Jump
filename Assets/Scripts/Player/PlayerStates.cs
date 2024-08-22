@@ -163,6 +163,7 @@ public class PlayerNormalState : PlayerBaseState
             #region Rotation
             var _currentMaxRotateSpeed = maxRotateSpeed;
             if (!fallingToGround) _currentMaxRotateSpeed = maxRotateAirSpeed;
+            
             if(accelingRotate) 
             { 
                 rotateSpeed *= accelMultiplier; 
@@ -210,6 +211,7 @@ public class PlayerNormalState : PlayerBaseState
                     else rotateSpeed -= rotateDecelerationSpeed;
                 }
             }
+            if (player.arms.IsTouchingLayers(player.m_WhatIsGround)) rotateSpeed = 0;
             player.transform.Rotate(0f, 0f, rotateSpeed);
             #endregion
             if (maxFallSpeed < 0)
@@ -238,7 +240,7 @@ public class PlayerNormalState : PlayerBaseState
             m_Rigidbody2D.velocity *= new Vector2(1f, lowJumpMultiplier);
         }
         // If the player should jump
-        if ((readyToJump || _coyoteTimer > 0) && jumpDown)
+        if ((readyToJump || _coyoteTimer > 0) && jumpDown && player.inevitableSpawnTimer <= 0)
         {
             // Reset the jumping timer
             _jumpingTimer = 0;
