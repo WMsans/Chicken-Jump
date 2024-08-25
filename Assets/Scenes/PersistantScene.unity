@@ -236,13 +236,13 @@ MonoBehaviour:
   fallMultiplier: 2.5
   maxFallSpeed: -13
   maxRotateSpeed: 3
-  maxRotateAirSpeed: 1
-  maxReturnSpeed: 5
+  maxRotateAirSpeed: 2
+  maxReturnSpeed: 3
   returnSpeedSmoothing: 0.3333
   rotateAccel: 1.2
-  rotateDecel: 0.2
-  fallingAccel: 0.2
-  accelMultiplier: 1
+  rotateDecel: 0.6
+  fallingAccel: 1
+  accelMultiplier: 0.5
   arms: {fileID: 1872043398}
   inevitableSpawnTime: 10
 --- !u!70 &1051372602

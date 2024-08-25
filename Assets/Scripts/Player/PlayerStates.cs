@@ -166,7 +166,7 @@ public class PlayerNormalState : PlayerBaseState
             
             if(accelingRotate) 
             { 
-                rotateSpeed *= accelMultiplier; 
+                rotateSpeed += accelMultiplier; 
                 accelingRotate = false; 
             }
             if ((Mathf.Abs(rotateSpeed + _sign(move) * rotateAccelerationSpeed) <= _currentMaxRotateSpeed || (_sign(move) != _sign(rotateSpeed) && Mathf.Abs(move) > 0.001f)))

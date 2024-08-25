@@ -566,7 +566,7 @@ GameObject:
   - component: {fileID: 1581285156}
   - component: {fileID: 1581285155}
   - component: {fileID: 1581285154}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: CheckPoint1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3313,7 +3313,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2142137135}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: CheckPoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
