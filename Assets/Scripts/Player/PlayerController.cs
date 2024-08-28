@@ -24,13 +24,17 @@ public class PlayerController : MonoBehaviour
     public LayerMask m_WhatIsGround;                          // A mask determining what is ground to the character
     public LayerMask m_HarmfulGround;
     public Transform m_GroundCheck;                           // A position marking where to check if the player is grounded.
+    public Transform m_HeadCheck;                             // A position marking where to bounce off the ground
     public float m_GroundedRadius;                            // The distance of to check the ground
     public float m_GroundBuff;                                // The distance to jump before touching the ground
+    public float m_HeadRadius;                                // The radius to bounce of the ground
+    public float m_HeadBounceForce;                           // The force of the head bounce
     public int m_CoyoteTime;                                  // Coyote time 
     [Range(0, 1f)] public float lowJumpMultiplier = 2.0f;
     public float fallMultiplier = 2.5f;
     public float maxFallSpeed;
-    public bool ReadyToJump { get; set; } = false;
+    public bool ReadyToJump { get; set; }
+    public bool Bounced { get; set; }
     public bool keyJump { get; private set; }
     public bool keyJumpDown { get; private set; }
     public float keyHor { get; private set; }
@@ -83,6 +87,10 @@ public class PlayerController : MonoBehaviour
         GetKeys();
         states[currentState].UpdateState(this);
     }
+    /// <summary>
+    /// Switch player to another state
+    /// </summary>
+    /// <param name="state"></param>
     public void SwitchState(Enums.PlayerState state)
     {
         if (states.ContainsKey(currentState))
@@ -93,6 +101,9 @@ public class PlayerController : MonoBehaviour
         currentState = state;
         states[currentState].EnterState(this);
     }
+    /// <summary>
+    /// Get the input for movement
+    /// </summary>
     void GetKeys()
     {
         keyHor = Input.GetAxisRaw("Horizontal");
@@ -110,14 +121,24 @@ public class PlayerController : MonoBehaviour
     {
         return states[state];
     }
+    /// <summary>
+    /// Switch to stiff state, ready to respawn
+    /// </summary>
     public void Die()
     {
         SwitchState(Enums.PlayerState.Stiff);
     }
+    /// <summary>
+    /// Set check point position of the player
+    /// </summary>
+    /// <param name="_checkPointPosition"></param>
     public void SetCheckPoint(Vector2 _checkPointPosition)
     {
         checkPointPosition = _checkPointPosition;
     }
+    /// <summary>
+    /// Set player transform to last checkpoint
+    /// </summary>
     public void ReturnToCheckPoint()
     {
         transform.position = checkPointPosition;
@@ -130,6 +151,7 @@ public class PlayerController : MonoBehaviour
     {
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(m_GroundCheck.position, m_GroundedRadius);
+        Gizmos.DrawWireSphere(m_HeadCheck.position, m_HeadRadius);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(m_GroundCheck.position, m_GroundedRadius + m_GroundBuff);
     }

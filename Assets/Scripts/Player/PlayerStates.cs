@@ -11,44 +11,51 @@ public abstract class PlayerBaseState
 }
 public class PlayerNormalState : PlayerBaseState
 {
-    bool readyToJump;
-    bool Grounded;
-    bool fallingToGround;
-    bool m_FacingRight = true;
-    bool m_AirControl;
-    Transform m_GroundCheck;
-    float m_GroundedRadius = .2f; // Radius of the overlap circle to determine if grounded
-    float m_GroundBuff;
-    LayerMask m_WhatIsGround;
-    float maxHorizontalSpeed;
-    float accelerationSpeed;
-    float decelerationSpeed;
-    float m_JumpForce;
-    float fallMultiplier;
-    float lowJumpMultiplier;
-    float maxFallSpeed;
-    float rotateAccelerationSpeed;
-    float rotateDecelerationSpeed;
-    float fallingAccelerationSpeed;
-    float maxRotateSpeed;
-    float maxRotateAirSpeed;
-    float maxReturnSpeed;
-    float returnSpeedSmoothing;
-    float rotateSpeed;
-    float accelMultiplier;
-    bool accelingRotate = false;
-    float wasMoving;
+    private bool readyToJump;
+    private bool Grounded;
+    private bool fallingToGround;
+    private bool m_FacingRight = true;
+    private bool m_AirControl;
+    private Transform m_GroundCheck;
+    private Transform m_HeadCheck;
+    private float m_GroundedRadius = .2f; // Radius of the overlap circle to determine if grounded
+    private float m_GroundBuff;
+    private float m_HeadRadius;
+    private float m_HeadBounceForce;
+    private LayerMask m_WhatIsGround;
+    private float maxHorizontalSpeed;
+    private float accelerationSpeed;
+    private float decelerationSpeed;
+    private float m_JumpForce;
+    private float fallMultiplier;
+    private float lowJumpMultiplier;
+    private float maxFallSpeed;
+    private float rotateAccelerationSpeed;
+    private float rotateDecelerationSpeed;
+    private float fallingAccelerationSpeed;
+    private float maxRotateSpeed;
+    private float maxRotateAirSpeed;
+    private float maxReturnSpeed;
+    private float returnSpeedSmoothing;
+    private float rotateSpeed;
+    private float accelMultiplier;
+    private bool accelingRotate = false;
+    private float wasMoving;
+    private float bounceTimer;
 
-    Rigidbody2D m_Rigidbody2D;
-    int _coyoteTimer = 0;
-    int _jumpingTimer = 0;
+    private Rigidbody2D m_Rigidbody2D;
+    private int coyoteTimer = 0;
+    private int jumpingTimer = 0;
     public override void EnterState(PlayerController player)
     {
         m_Rigidbody2D = player.GetComponent<Rigidbody2D>();
         m_GroundCheck = player.m_GroundCheck;
+        m_HeadCheck = player.m_HeadCheck;
         m_WhatIsGround = player.m_WhatIsGround;
         m_GroundedRadius = player.m_GroundedRadius;
         m_GroundBuff = player.m_GroundBuff;
+        m_HeadRadius = player.m_HeadRadius;
+        m_HeadBounceForce = player.m_HeadBounceForce;
         m_AirControl =  player.m_AirControl;
         maxHorizontalSpeed = player.maxHorizontalSpeed;
         accelerationSpeed = player.accel;
@@ -75,14 +82,15 @@ public class PlayerNormalState : PlayerBaseState
     {
         if (player.keyJumpDown)
         {
-            _jumpingTimer = player.m_CoyoteTime;
+            jumpingTimer = player.m_CoyoteTime;
         }
         if (player.ArmTouchingGround)
         {
             Die(player);
         }
     }
-    void Die(PlayerController player)
+
+    private void Die(PlayerController player)
     {
         if(player.inevitableSpawnTimer <= 0)
         {
@@ -99,33 +107,57 @@ public class PlayerNormalState : PlayerBaseState
         player.ReadyToJump = readyToJump;
 
         // The player is ready to jump if a circlecast to the groundcheck position hits anything designated as ground
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(new Vector2(m_GroundCheck.position.x, m_GroundCheck.position.y), m_GroundedRadius + m_GroundBuff, m_WhatIsGround);
-        for (int i = 0; i < colliders.Length; i++)
+        var colliders = new Collider2D[12];
+        colliders = Physics2D.OverlapCircleAll(new Vector2(m_GroundCheck.position.x, m_GroundCheck.position.y), m_GroundedRadius + m_GroundBuff, m_WhatIsGround);
+        foreach (var t in colliders)
         {
-            if (colliders[i].isActiveAndEnabled && colliders[i].gameObject != player.gameObject)
+            if (t.isActiveAndEnabled && t.gameObject != player.gameObject)
             {
                 readyToJump = true;
                 player.ReadyToJump = readyToJump;
-                _coyoteTimer = player.m_CoyoteTime;
+                player.Bounced = false;
+                coyoteTimer = player.m_CoyoteTime;
             }
         }
 
         // The player is grounded if a circlecast to the groundcheck position hits anything designated as ground
         colliders = Physics2D.OverlapCircleAll(new Vector2(m_GroundCheck.position.x, m_GroundCheck.position.y), m_GroundedRadius, m_WhatIsGround);
-        for (int i = 0; i < colliders.Length; i++)
+        foreach (var t in colliders)
         {
-            if (colliders[i].isActiveAndEnabled && colliders[i].gameObject != player.gameObject)
+            if (t.isActiveAndEnabled && t.gameObject != player.gameObject)
             {
                 fallingToGround = true;
             }
         }
+        // The player should be bounce when head is touching ground
+        colliders = Physics2D.OverlapCircleAll(new Vector2(m_HeadCheck.position.x, m_HeadCheck.position.y), m_HeadRadius, m_WhatIsGround);
+        foreach (var t in colliders)
+        {
+            if (t.isActiveAndEnabled && t.gameObject != player.gameObject)
+            {
+                Bounce(player, t);
+            }
+        }
+        coyoteTimer = Mathf.Max(coyoteTimer - 1, 0);
+        jumpingTimer = Mathf.Max(jumpingTimer - 1, 0);
+        bounceTimer = Mathf.Max(bounceTimer - 1, 0);
 
-        _coyoteTimer = Mathf.Max(_coyoteTimer - 1, 0);
-        _jumpingTimer = Mathf.Max(_jumpingTimer - 1, 0);
-
-        Move(player.keyHor * Time.fixedDeltaTime, _jumpingTimer > 0, player.keyJump, player);
+        Move(player.keyHor * Time.fixedDeltaTime, jumpingTimer > 0, player.keyJump, player);
     }
-    void Move(float move, bool jumpDown, bool jump, PlayerController player)
+
+    private void Bounce(PlayerController player, Collider2D groundCollider)
+    {
+        // Check if the player is downward and not bounced
+        if (Mathf.Abs(Mathf.DeltaAngle(m_Rigidbody2D.rotation, 0f)) > 120f && m_HeadCheck.position.y > groundCollider.bounds.min.y && bounceTimer <= 0f)
+        {
+            player.Bounced = true;
+            m_Rigidbody2D.velocity *= Vector2.right;
+            m_Rigidbody2D.AddForce(new Vector2(0, m_HeadBounceForce), ForceMode2D.Impulse);
+            bounceTimer = player.m_CoyoteTime;
+        }
+    }
+
+    private void Move(float move, bool jumpDown, bool jump, PlayerController player)
     {
         // only control the player if grounded or airControl is turned on
         if (readyToJump || m_AirControl)
@@ -183,15 +215,6 @@ public class PlayerNormalState : PlayerBaseState
                 // Start Turn Back
                 var _playerAngleDiff = Mathf.DeltaAngle(player.transform.rotation.z * Mathf.Rad2Deg, 0f);
                 rotateSpeed = _playerAngleDiff * (1f - returnSpeedSmoothing);
-
-                /*if (rotateSpeed + rotateAccelerationSpeed > Mathf.Abs(_playerAngleDiff * (1f - returnSpeedSmoothing)))
-                {
-                    rotateSpeed = _playerAngleDiff * (1f - returnSpeedSmoothing);
-                }
-                else
-                {
-                    rotateSpeed += rotateAccelerationSpeed * _sign(_playerAngleDiff);
-                }*/
                 rotateSpeed = Mathf.Clamp(rotateSpeed, -maxReturnSpeed, maxReturnSpeed);
             }
             else if(Mathf.Abs(move) <= 0.001f && fallingToGround && !player.ArmTouchingGround)
@@ -229,21 +252,23 @@ public class PlayerNormalState : PlayerBaseState
                 Flip(player);
             }
         }
-        // Fall faster when falling
-        if (m_Rigidbody2D.velocity.y < 0)
-        {
-            m_Rigidbody2D.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
-        }
-        // Fall faster after releasing jump key
-        else if (!jump)
-        {
-            m_Rigidbody2D.velocity *= new Vector2(1f, lowJumpMultiplier);
-        }
+        // Variable jump
+        if(!player.Bounced)
+            // Fall faster when falling
+            if (m_Rigidbody2D.velocity.y < 0)
+            {
+                m_Rigidbody2D.velocity += Vector2.up * (Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime);
+            }
+            // Fall faster after releasing jump key
+            else if (!jump)
+            {
+                m_Rigidbody2D.velocity *= new Vector2(1f, lowJumpMultiplier);
+            }
         // If the player should jump
-        if ((readyToJump || _coyoteTimer > 0) && jumpDown && player.inevitableSpawnTimer <= 0)
+        if ((readyToJump || coyoteTimer > 0) && jumpDown && player.inevitableSpawnTimer <= 0)
         {
             // Reset the jumping timer
-            _jumpingTimer = 0;
+            jumpingTimer = 0;
             // Add a vertical force to the player.
             readyToJump = false;
             m_Rigidbody2D.velocity *= Vector2.right;
@@ -254,7 +279,7 @@ public class PlayerNormalState : PlayerBaseState
     /// Flips the player horizontally
     /// </summary>
     /// <param name="player"></param>
-    void Flip(PlayerController player)
+    private void Flip(PlayerController player)
     {
         // Switch the way the player is labelled as facing.
         m_FacingRight = !m_FacingRight;
@@ -269,7 +294,7 @@ public class PlayerNormalState : PlayerBaseState
     /// </summary>
     /// <param name="x"></param>
     /// <returns>The sign of the number</returns>
-    float _sign(float x)
+    private float _sign(float x)
     {
         if (Mathf.Abs(x) < 0.001) return 0;
         return Mathf.Sign(x);
@@ -279,7 +304,7 @@ public class PlayerNormalState : PlayerBaseState
     /// </summary>
     /// <param name="x"></param>
     /// <returns>The number's reversed sign</returns>
-    float _reverseSign(float x)
+    private float _reverseSign(float x)
     {
         return _sign(x) * -1;
     }
@@ -290,7 +315,7 @@ public class PlayerNormalState : PlayerBaseState
 }
 public class PlayerStiffState : PlayerBaseState
 {
-    Rigidbody2D rd;
+    private Rigidbody2D rd;
     public override void EnterState(PlayerController player)
     {
         rd = player.GetComponent<Rigidbody2D>();
