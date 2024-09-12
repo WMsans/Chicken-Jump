@@ -120,7 +120,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trapJoint: {fileID: 4516960651859524898}
-  trapRd: {fileID: 4765849607248039483}
+  trapTransform: {fileID: 6752414758479435531}
 --- !u!1001 &5333410938316167538
 PrefabInstance:
   m_ObjectHideFlags: 0

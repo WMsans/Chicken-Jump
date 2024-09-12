@@ -5,7 +5,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IDynamicSceneObjects
 {
     public static PlayerController Instance { get; private set; }
     public Enums.PlayerState currentState { get; private set; }
@@ -139,13 +139,19 @@ public class PlayerController : MonoBehaviour
     /// <summary>
     /// Set player transform to last checkpoint
     /// </summary>
-    public void ReturnToCheckPoint()
+    private void ReturnToCheckPoint()
     {
         transform.position = checkPointPosition;
         transform.rotation = Quaternion.Euler(Vector3.zero);
         inevitableSpawnTimer = inevitableSpawnTime;
+    }
 
-        
+    public void Restore()
+    {
+        // Return to the last checkpoint
+        ReturnToCheckPoint();
+        // Respawn
+        SwitchState(Enums.PlayerState.Normal);
     }
     private void OnDrawGizmosSelected()
     {

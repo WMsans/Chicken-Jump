@@ -340,18 +340,17 @@ public class PlayerStiffState : PlayerBaseState
     {
         if (Input.GetButtonDown("Jump"))
         {
-            // Return to the last checkpoint
-            player.ReturnToCheckPoint();
-            // Respawn
-            player.SwitchState(Enums.PlayerState.Normal);
+            DynamicManager.Instance.RestartGame();
         }
     }
     public override void FixedUpdateState(PlayerController player)
     {
         rd.velocity = Vector2.zero;
+        rd.gravityScale = 0;
     }
     public override void ExitState(PlayerController player)
     {
         player.GetComponent<SpriteRenderer>().color = Color.white;
+        rd.gravityScale = 3;
     }
 }
